@@ -1,0 +1,4 @@
+lexer/lexer.c lunit_destroy()
+
+Make mkc unable to compile inconsistient programs
+See https://gcc.gnu.org/onlinedocs/gnat_ugn/The-Ada-Library-Information-Files.html
