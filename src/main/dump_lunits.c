@@ -6,7 +6,7 @@
 #include <string.h> /* For strerror */
 
 #include <common/exitcodes.h>
-#include <common/logger.h>
+#include <common/lstring.h>
 #include <common/status.h>
 #include <lexer/lexer.h>
 #include <lexer/source.h>
@@ -21,17 +21,17 @@ static FILE *get_output_stream(struct options *opts);
 
 static FILE *get_input_stream(struct options *opts);
 
-static void log_lunit(struct log *log, struct lunit *lunit);
+static void log_lunit(struct lstring *log, struct lunit *lunit);
 
-static void log_token(struct log *log, struct lunit *lunit);
+static void log_token(struct lstring *log, struct lunit *lunit);
 
-static void log_lexme(struct log *log, struct lunit *lunit);
+static void log_lexme(struct lstring *log, struct lunit *lunit);
 
-static void log_line(struct log *log, struct lunit *lunit);
+static void log_line(struct lstring *log, struct lunit *lunit);
 
-static void log_column(struct log *log, struct lunit *lunit);
+static void log_column(struct lstring *log, struct lunit *lunit);
 
-static void log_length(struct log *log, struct lunit *lunit);
+static void log_length(struct lstring *log, struct lunit *lunit);
 
 static char *token_to_str(enum token token);
 
@@ -43,7 +43,7 @@ void dump_lunits(int argc, char **argv)
     FILE *out;
     FILE *in;
     struct sources *sources;
-    struct log *log;
+    struct lstring *log;
 
     opts = register_options();
 
@@ -62,7 +62,7 @@ void dump_lunits(int argc, char **argv)
     sources = source_create_struct();
     source_push(sources, in);
 
-    log = logger_create();
+    log = lstring_create();
 
     while (true)
     {
@@ -83,8 +83,8 @@ void dump_lunits(int argc, char **argv)
         if (finish == true) break;
     }
 
-    logger_print(log, out);
-    logger_destroy(log);
+    lstring_print(log, out);
+    lstring_destroy(log);
 
     source_pop(sources);
     free(sources);
@@ -173,27 +173,27 @@ static FILE *get_input_stream(struct options *opts)
     return fd;
 }
 
-static void log_lunit(struct log *log, struct lunit *lunit)
+static void log_lunit(struct lstring *log, struct lunit *lunit)
 {
     log_token(log, lunit);
     log_lexme(log, lunit);
     log_line(log, lunit);
     log_column(log, lunit);
     log_length(log, lunit);
-    logger_append_string(log, "\n");
+    lstring_append_string(log, "\n");
 }
 
-static void log_token(struct log *log, struct lunit *lunit)
+static void log_token(struct lstring *log, struct lunit *lunit)
 {
     char *token_str;
 
     token_str = token_to_str(lunit->token);
-    logger_append_string(log, "Token: ");
-    logger_append_string(log, token_str);
-    logger_append_string(log, "\n");
+    lstring_append_string(log, "Token: ");
+    lstring_append_string(log, token_str);
+    lstring_append_string(log, "\n");
 }
 
-static void log_lexme(struct log *log, struct lunit *lunit)
+static void log_lexme(struct lstring *log, struct lunit *lunit)
 {
     enum token t;
 
@@ -201,32 +201,31 @@ static void log_lexme(struct log *log, struct lunit *lunit)
 
     if (t != TOK_EOL && t != TOK_EOF && t != TOK_TAB)
     {
-        logger_append_string(log, "Lexme: ");
-        /* Lexme isn't null terminated!!! */
-        logger_append_sequence(log, lunit->lexme, lunit->length);
-        logger_append_string(log, "\n");
+        lstring_append_string(log, "Lexme: ");
+        lstring_append_lstring(log, lunit->lexme);
+        lstring_append_string(log, "\n");
     }
 }
 
-static void log_line(struct log *log, struct lunit *lunit)
+static void log_line(struct lstring *log, struct lunit *lunit)
 {
-    logger_append_string(log, "Line: ");
-    logger_append_size(log, lunit->line);
-    logger_append_string(log, "\n");
+    lstring_append_string(log, "Line: ");
+    lstring_append_size(log, lunit->line);
+    lstring_append_string(log, "\n");
 }
 
-static void log_column(struct log *log, struct lunit *lunit)
+static void log_column(struct lstring *log, struct lunit *lunit)
 {
-    logger_append_string(log, "Column: ");
-    logger_append_size(log, lunit->column);
-    logger_append_string(log, "\n");
+    lstring_append_string(log, "Column: ");
+    lstring_append_size(log, lunit->column);
+    lstring_append_string(log, "\n");
 }
 
-static void log_length(struct log *log, struct lunit *lunit)
+static void log_length(struct lstring *log, struct lunit *lunit)
 {
-    logger_append_string(log, "Length: ");
-    logger_append_size(log, lunit->length);
-    logger_append_string(log, "\n");
+    lstring_append_string(log, "Length: ");
+    lstring_append_size(log, lunit->length);
+    lstring_append_string(log, "\n");
 }
 
 

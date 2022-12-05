@@ -8,6 +8,7 @@
 //#include <common/status.h>
 #include <common/exitcodes.h>
 #include <common/guard.h>
+#include <common/lstring.h>
 #include <common/messages.h>
 
 #include "macros.h"
@@ -167,7 +168,6 @@ static struct lunit *lunit_create(struct lexme_info *lexme_info,
 	lunit->token = token;
 	lunit->line = lexme_info->line;
 	lunit->column = lexme_info->column;
-	lunit->length = lexme_info->index;
     /*
       Yup, we don't copy it with strncpy
       This way is way simpler, we don't have to free lexme_info->text
@@ -178,7 +178,9 @@ static struct lunit *lunit_create(struct lexme_info *lexme_info,
       Size of lexme_info->text is multiple of LEXME_ALLOCATION_STEP
       Most likely there are unused bytes there... realloc it
     */
-    lunit->lexme = realloc(lexme_info->text, lexme_info->index);
+    lunit->lexme = lstring_create();
+    lunit->lexme->text = realloc(lexme_info->text, lexme_info->index);
+    lunit->lexme->length = lexme_info->index;
 
 	return lunit;
 }

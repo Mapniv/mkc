@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include <common/lstring.h>
+
 enum token
 {
 	/* Procedure declarations */
@@ -66,7 +68,7 @@ enum token
 struct lunit
 {
 	struct lunit *next;
-	char *lexme;
+	struct lstring *lexme;
 	size_t line;
 	size_t column;
 	size_t length;
