@@ -10,10 +10,10 @@
 #include <common/guard.h>
 #include <common/messages.h>
 
-#include "source.h"
 #include "macros.h"
-#include "lexer.h"
+#include "source.h"
 
+#include "lexer.h"
 
 #define LEXME_ALLOCATION_STEP 64
 
@@ -27,18 +27,18 @@ struct lexme_info
     char *text;
 };
 
-struct lunit *lunit_get(struct source_info *source_info);
+struct lunit *lunit_get(struct sources *sources);
 void lunit_destroy(struct lunit *lunit);
 static struct lunit *lunit_create(struct lexme_info *lexme_info,
     enum token token);
 static void lexme_append(struct lexme_info *lexme_info, char c);
-static void skip_whitespace_and_comments(struct source_info *source_info);
+static void skip_whitespace_and_comments(struct sources *sources);
 static inline bool test_char_ident_i(char c);
 static inline bool test_char_ident_f(char c);
 static inline bool test_char_whitespace(char c);
 
 
-struct lunit *lunit_get(struct source_info *source_info)
+struct lunit *lunit_get(struct sources *sources)
 {
     struct lexme_info lexme_info;
 	char c;
@@ -48,13 +48,13 @@ struct lunit *lunit_get(struct source_info *source_info)
     /* We are going to call realloc not malloc, see lexme_append */ 
     lexme_info.text = NULL;
 
-    skip_whitespace_and_comments(source_info);
+    skip_whitespace_and_comments(sources);
 
 	/* Save location of the lexme */
-	lexme_info.line = source_line(source_info);
-	lexme_info.column = source_column(source_info);
+	lexme_info.line = source_line(sources);
+	lexme_info.column = source_column(sources);
 
-	c = source_get(source_info);
+	c = source_get(sources);
 
 	if (test_char_ident_i(c))
 	{
@@ -70,14 +70,14 @@ struct lunit *lunit_get(struct source_info *source_info)
 	if (c == '\t')
 	{
         lexme_append(&lexme_info, c);
-		source_next(source_info);
+		source_next(sources);
 		return lunit_create(&lexme_info, TOK_TAB);
 	}
 
 	if (c == '\n') 
 	{
         lexme_append(&lexme_info, c);
-		source_next(source_info);
+		source_next(sources);
 		return lunit_create(&lexme_info, TOK_EOL);
 	}
 
@@ -94,7 +94,7 @@ struct lunit *lunit_get(struct source_info *source_info)
 
 	/* Fallback */
 	lexme_append(&lexme_info, c);
-	source_next(source_info);
+	source_next(sources);
 	return lunit_create(&lexme_info, TOK_UNKNOWN);
 
     /* Finite state machine begins here */
@@ -119,10 +119,10 @@ struct lunit *lunit_get(struct source_info *source_info)
 ident:
 	/* Epilogue; finishes last state */
 	lexme_append(&lexme_info, c);
-	source_next(source_info);
+	source_next(sources);
 
 	/* Prologue; new state begins */
-	c = source_get(source_info);
+	c = source_get(sources);
 
 	if (test_char_ident_f(c))
 		goto ident;
@@ -193,18 +193,18 @@ void lunit_destroy(struct lunit *lunit)
 }
 
 /* TODO skip comments */
-static void skip_whitespace_and_comments(struct source_info *source_info)
+static void skip_whitespace_and_comments(struct sources *sources)
 {
 	char c;
 
 	while (true)
 	{
-		c = source_get(source_info);
+		c = source_get(sources);
 
 		/* if c is whitespace skip it */
 		if (test_char_whitespace(c))
 		{
-			source_next(source_info);
+			source_next(sources);
 			continue;
 		}
 

@@ -10,32 +10,53 @@
 #include <common/guard.h>
 #include <common/messages.h>
 
-#include "lexer.h"
-
 #include "source.h"
 
-static void load(struct source_info *source_info);
-static struct source *source_new(FILE *fd);
+/*
+  If you set SOURCE_BUFFER_SIZE to a number larger than UINT16_MAX
+  you will have to change type of buffer_index member of source structure
+  to uint32_t or something larger
+*/
+#define SOURCE_BUFFER_SIZE 512
 
-struct source_info *source_create_info(void)
+struct source_info
 {
-    struct source_info *source_info;
+	struct source_info *previous;
+	FILE *fd;
+	size_t line;
+	size_t column;
+	uint16_t buffer_index;
+	char buffer[SOURCE_BUFFER_SIZE];
+};
 
-    source_info = malloc(sizeof(struct source_info));
+struct sources
+{
+    struct source_info *current;
+};
 
-    GUARD(source_info)
 
-    source_info->current = NULL;
+static void load(struct sources *sources);
+static struct source_info *source_create_info(FILE *fd);
 
-    return source_info;
+struct sources *source_create_struct(void)
+{
+    struct sources *sources;
+
+    sources = malloc(sizeof(struct sources));
+
+    GUARD(sources)
+
+    sources->current = NULL;
+
+    return sources;
 }
 
-void source_push(struct source_info *source_info, FILE *fd)
+void source_push(struct sources *sources, FILE *fd)
 {
-	struct source *new_source;
+	struct source_info *new_source;
 
 	/* Allocate and initialize new_source */
-	new_source = source_new(fd);
+	new_source = source_create_info(fd);
 
 	/*
 	  Push new_source onto the source "stack"
@@ -43,45 +64,45 @@ void source_push(struct source_info *source_info, FILE *fd)
 	  new_source has a pointer to previous element
 	  so this operation can be reverted with a call to source_pop
 	*/
-    new_source->previous = source_info->current;
-	source_info->current = new_source;
+    new_source->previous = sources->current;
+	sources->current = new_source;
 
 	/*
 	  Now that source_info->current points to newly created source
 	  we can initialize buffer and buffer_index members of current source
 	*/
-	load(source_info);
+	load(sources);
 }
 
-void source_pop(struct source_info *source_info)
+void source_pop(struct sources *sources)
 {
-	struct source *tmp;
+	struct source_info *tmp;
 
 	/*
 	  Soon current_source is going to point to the previous element
 	  as we are just about to free and replace it
 	  We have to save it to prevent memory leaks
 	*/
-	tmp = source_info->current;
+	tmp = sources->current;
 
 	/*
 	  Since our list functions like a stack we can pop a element
 	  This means that the top element gets removed
 	  and previous element becomes last (or top) element
 	*/
-	source_info->current = source_info->current->previous;
+	sources->current = sources->current->previous;
 
 	/* Duh */
 	free(tmp);
 }
 
 
-static struct source *source_new(FILE *fd)
+static struct source_info *source_create_info(FILE *fd)
 {
-	struct source *new_source;
+	struct source_info *new_source;
 
 	/* Try to allocate new source */
-	new_source = malloc(sizeof(struct source));
+	new_source = malloc(sizeof(struct source_info));
 
 	GUARD(new_source)
 
@@ -99,32 +120,32 @@ static struct source *source_new(FILE *fd)
 	return new_source;
 }
 
-char source_get(struct source_info *source_info)
+char source_get(struct sources *sources)
 {
-    struct source *current;
+    struct source_info *current;
 
-    current = source_info->current;
+    current = sources->current;
 
 	return current->buffer[current->buffer_index];
 }
 
-void source_next(struct source_info *source_info)
+void source_next(struct sources *sources)
 {
-    struct source *source;
+    struct source_info *current;
 	bool previous_char_was_newline = false;
 
     /*
       Current is easier to type than source_info->current
       We want the ech line to be no longer than 80 chars, too
     */
-    source = source_info->current;
+    current = sources->current;
 
 	/*
 	  Check if current char is a EOL, if so set a flag
 	  This flag is used to decide if we want to increment
 	  column number or reset column number and increment line number
 	*/
-	if (source->buffer[source->buffer_index] == '\n')
+	if (current->buffer[current->buffer_index] == '\n')
 		previous_char_was_newline = true;
 
 	/*
@@ -132,14 +153,14 @@ void source_next(struct source_info *source_info)
 	  When we reload the buffer we set the position
 	  to the very beginning of it
 	*/
-	if (source->buffer_index == SOURCE_BUFFER_SIZE)
+	if (current->buffer_index == SOURCE_BUFFER_SIZE)
 	{
-		source->buffer_index = 0;
-		load(source_info);
+		current->buffer_index = 0;
+		load(sources);
 	}
 	else
 	{
-		source->buffer_index += 1;
+		current->buffer_index += 1;
 	}
 
 	/*
@@ -155,43 +176,43 @@ void source_next(struct source_info *source_info)
     /* #TODO Add more useful error messages maybe? */
 	if (previous_char_was_newline == true)
 	{
-		if (source->line == SIZE_MAX)
+		if (current->line == SIZE_MAX)
 		{
 			fputs("File too big", stderr);
 			exit(EXITCODE_INTERNAL_ERROR);
 		}
-		source->line += 1;
-		source->column = 1;
+		current->line += 1;
+		current->column = 1;
 	}
 	else
 	{
-		if (source->column == SIZE_MAX)
+		if (current->column == SIZE_MAX)
 		{
 			fputs("Line too long", stderr);
 			exit(EXITCODE_INTERNAL_ERROR);
 		}
-		source->column += 1;
+		current->column += 1;
 	}
 }
 
-size_t source_line(struct source_info *source_info)
+size_t source_line(struct sources *sources)
 {
-	return source_info->current->line;
+	return sources->current->line;
 }
 
-size_t source_column(struct source_info *source_info)
+size_t source_column(struct sources *sources)
 {
-	return source_info->current->column;
+	return sources->current->column;
 }
 
 /* lead next characters to buffer */
-void load(struct source_info *source_info)
+void load(struct sources *sources)
 {
-    struct source *source;
+    struct source_info *current;
 	uint16_t chars_read;
 
     /* It's shorter this way */
-    source = source_info->current;
+    current = sources->current;
 	chars_read = 0;
 
 	/*
@@ -199,7 +220,7 @@ void load(struct source_info *source_info)
 	  Fread returns number of chunks read, and we want to know how many
 	  chars we just read, setting chunk size to one solves the problem
 	*/
-	chars_read = fread(source->buffer, 1, SOURCE_BUFFER_SIZE, source->fd);
+	chars_read = fread(current->buffer, 1, SOURCE_BUFFER_SIZE, current->fd);
 
     /* We read less characters than we asked for, EOF or error */
 	if (chars_read < SOURCE_BUFFER_SIZE)
@@ -212,6 +233,6 @@ void load(struct source_info *source_info)
 			exit(EXITCODE_INTERNAL_ERROR);
 		}
 
-		source->buffer[chars_read] = '\0';
+		current->buffer[chars_read] = '\0';
 	}
 }

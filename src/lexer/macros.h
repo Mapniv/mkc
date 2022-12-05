@@ -32,8 +32,8 @@
 #define STATE_1(matched, char_a)                         \
 matched_##matched:                                       \
 	lexme_append(&lexme_info, c);                        \
-	source_next(source_info);                            \
-	c = source_get(source_info);                         \
+	source_next(sources);                                \
+	c = source_get(sources);                             \
 	if (c == _LITERAL_##char_a )                         \
 		goto matched_##matched##char_a;                  \
 	if (test_char_ident_f(c))                            \
@@ -44,8 +44,8 @@ matched_##matched:                                       \
 #define STATE_2(matched, char_a, char_b)                 \
 matched_##matched:                                       \
 	lexme_append(&lexme_info, c);                        \
-	source_next(source_info);                            \
-	c = source_get(source_info);                         \
+	source_next(sources);                                \
+	c = source_get(sources);                             \
 	if (c == _LITERAL_##char_a )                         \
 		goto matched_##matched##char_a;                  \
 	if (c == _LITERAL_##char_b )                         \
@@ -57,8 +57,8 @@ matched_##matched:                                       \
 #define STATE_3(matched, char_a, char_b, char_c)         \
 matched_##matched:                                       \
 	lexme_append(&lexme_info, c);                        \
-	source_next(source_info);                            \
-	c = source_get(source_info);                         \
+	source_next(sources);                                \
+	c = source_get(sources);                             \
 	if (c == _LITERAL_##char_a )                         \
 		goto matched_##matched##char_a;                  \
 	if (c == _LITERAL_##char_b )                         \
@@ -72,8 +72,8 @@ matched_##matched:                                       \
 #define STATE_F(matched, token)                          \
 matched_##matched:                                       \
 	lexme_append(&lexme_info, c);                        \
-	source_next(source_info);                            \
-	c = source_get(source_info);                         \
+	source_next(sources);                                \
+	c = source_get(sources);                             \
 	if (test_char_ident_f(c))                            \
 		goto ident;                                      \
 	return lunit_create(&lexme_info, token);
@@ -81,8 +81,8 @@ matched_##matched:                                       \
 #define STATE_1F(matched, char_a, token)                 \
 matched_##matched:                                       \
 	lexme_append(&lexme_info, c);                        \
-	source_next(source_info);                            \
-	c = source_get(source_info);                         \
+	source_next(sources);                                \
+	c = source_get(sources);                             \
 	if (c == _LITERAL_##char_a)                          \
 		goto matched_##matched##char_a;                  \
 	if (test_char_ident_f(c))                            \

@@ -3,14 +3,14 @@
 
 #include <stdio.h> /* for FILE */
 
-#include "lexer.h"
+struct sources;
 
-struct source_info *source_create_info(void);
-void source_push(struct source_info *source_info, FILE *fd);
-void source_pop(struct source_info *source_info);
-char source_get(struct source_info *source_info);
-void source_next(struct source_info *source_info);
-size_t source_line(struct source_info *source_info);
-size_t source_column(struct source_info *source_info);
+struct sources *source_create_struct(void);
+void source_push(struct sources *sources, FILE *fd);
+void source_pop(struct sources *sources);
+char source_get(struct sources *sources);
+void source_next(struct sources *sources);
+size_t source_line(struct sources *sources);
+size_t source_column(struct sources *sources);
 
 #endif

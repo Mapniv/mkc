@@ -42,7 +42,7 @@ void dump_lunits(int argc, char **argv)
     struct options *opts;
     FILE *out;
     FILE *in;
-    struct source_info *source_info;
+    struct sources *sources;
     struct log *log;
 
     opts = register_options();
@@ -59,8 +59,8 @@ void dump_lunits(int argc, char **argv)
     out = get_output_stream(opts);
     in = get_input_stream(opts);
 
-    source_info = source_create_info();
-    source_push(source_info, in);
+    sources = source_create_struct();
+    source_push(sources, in);
 
     log = logger_create();
 
@@ -70,7 +70,7 @@ void dump_lunits(int argc, char **argv)
         bool finish;
 
         /* Get one lunit from lexer */
-        lunit = lunit_get(source_info);
+        lunit = lunit_get(sources);
 
         log_lunit(log, lunit);
 
@@ -86,8 +86,8 @@ void dump_lunits(int argc, char **argv)
     logger_print(log, out);
     logger_destroy(log);
 
-    source_pop(source_info);
-    free(source_info);
+    source_pop(sources);
+    free(sources);
 }
 
 static struct options *register_options(void)
