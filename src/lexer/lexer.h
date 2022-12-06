@@ -12,4 +12,3 @@ struct lunit *lunit_get(struct sources *sources);
 void lunit_destroy(struct lunit *lunit);
 
 #endif
-

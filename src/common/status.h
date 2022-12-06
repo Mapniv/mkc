@@ -3,8 +3,8 @@
 
 enum status
 {
-	FAILURE = 0,
-	OK = 1
+    FAILURE = 0,
+    OK = 1
 };
 
 #endif
