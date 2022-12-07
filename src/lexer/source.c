@@ -90,7 +90,7 @@ void source_pop(struct sources *sources)
     if (sources->current == NULL)
     {
         fprintf(stderr, "Attempted to pop source but stack is empty\n");
-        exit(EXIT_INTERNAL_ERROR);
+        exit(EXITCODE_INTERNAL_ERROR);
     }
 
     /*
