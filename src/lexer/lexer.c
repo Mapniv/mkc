@@ -187,10 +187,8 @@ static struct lunit *lunit_create(struct lexme_info *lexme_info,
 
 void lunit_destroy(struct lunit *lunit)
 {
-    /* Some tokens (like newline) leave lexme field empty */
-    /* TODO Perhaps we don't have to free it but just pass the pointer? */
-    if (lunit->lexme != NULL)
-        free(lunit->lexme);
+    /* TODO Perhaps we don't have to free lexme but just pass the pointer? */
+    lstring_destroy(lunit->lexme);
     free(lunit);
 }
 

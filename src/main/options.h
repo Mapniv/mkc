@@ -45,6 +45,8 @@ struct options
 
 struct options *opt_create_struct(void);
 
+void opt_destroy_struct(struct options *opts);
+
 void opt_register(struct options *opts, struct option_info *info);
 
 void opt_parse(struct options *opts, int argc, char **argv);

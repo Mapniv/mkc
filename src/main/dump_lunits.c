@@ -59,6 +59,8 @@ void dump_lunits(int argc, char **argv)
     out = get_output_stream(opts);
     in = get_input_stream(opts);
 
+    opt_destroy_struct(opts);
+
     sources = source_create_struct();
     source_push(sources, in);
 
@@ -68,6 +70,8 @@ void dump_lunits(int argc, char **argv)
     {
         struct lunit *lunit;
         bool finish;
+
+        finish = false;
 
         /* Get one lunit from lexer */
         lunit = lunit_get(sources);
@@ -88,6 +92,9 @@ void dump_lunits(int argc, char **argv)
 
     source_pop(sources);
     free(sources);
+
+    fclose(in);
+    fclose(out);
 }
 
 static struct options *register_options(void)
@@ -224,7 +231,7 @@ static void log_column(struct lstring *log, struct lunit *lunit)
 static void log_length(struct lstring *log, struct lunit *lunit)
 {
     lstring_append_string(log, "Length: ");
-    lstring_append_size(log, lunit->length);
+    lstring_append_size(log, lunit->lexme->length);
     lstring_append_string(log, "\n");
 }
 

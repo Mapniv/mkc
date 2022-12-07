@@ -169,7 +169,7 @@ void source_next(struct sources *sources)
       When we reload the buffer we set the position
       to the very beginning of it
     */
-    if (current->buffer_index == SOURCE_BUFFER_SIZE)
+    if (current->buffer_index == SOURCE_BUFFER_SIZE - 1)
     {
         current->buffer_index = 0;
         load(sources);

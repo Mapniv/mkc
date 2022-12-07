@@ -71,7 +71,6 @@ struct lunit
     struct lstring *lexme;
     size_t line;
     size_t column;
-    size_t length;
     enum token token;
 };
 

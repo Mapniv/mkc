@@ -5,17 +5,21 @@
 
 #include <common/guard.h>
 #include <common/status.h>
+
 #include "options.h"
 
 
-/* TODO descriebe these functions */
 struct options *opt_create_struct(void);
+
+void opt_destroy_struct(struct options *opts);
 
 void opt_register(struct options *opts, struct option_info *info);
 
 void opt_parse(struct options *opts, int argc, char **argv);
 
 struct option_info *opt_create_info(bool takes_parameters);
+
+static void opt_destroy_info(struct option_info *info);
 
 void opt_add_short(struct option_info *info, char c);
 
@@ -65,6 +69,24 @@ struct options *opt_create_struct(void)
     opts->parameter_count = 0;
 
     return opts;
+}
+
+void opt_destroy_struct(struct options *opts)
+{
+    /* Free struct options recursively */
+
+    /*
+      Destroy all option_info structures
+      opts->option_count is a size_t
+    */
+    for (size_t iter = 0; iter != opts->option_count; ++iter)
+        opt_destroy_info(opts->options[iter]);
+
+    free(opts->options);
+
+    free(opts->parameters);
+
+    free(opts);
 }
 
 void opt_register(struct options *opts, struct option_info *info)
@@ -180,6 +202,27 @@ struct option_info *opt_create_info(bool takes_parameter)
     info->occurrences = 0;
 
     return info;
+}
+
+/* Free struct option_info */
+static void opt_destroy_info(struct option_info *info)
+{
+    /*
+      Array of strings, free the array but not the strings
+      Strings are string literals, they weren't created using malloc
+    */
+    free(info->long_options);
+
+    /* Array of chars, free it */
+    free(info->short_options);
+
+    /*
+      We do not free info->parameters[x] because these are string literals
+      The array info->parameters must be freed though
+    */
+    free(info->parameters);
+
+    free(info);
 }
 
 void opt_add_short(struct option_info *info, char c)
