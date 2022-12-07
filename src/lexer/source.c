@@ -78,12 +78,28 @@ void source_pop(struct sources *sources)
 {
     struct source_info *tmp;
 
+
+    /*
+      Check whether stack is empty
+      it is an error to pop element out of an empty stack
+      When structure of type 'sources' is initialized
+      member 'current' is initialized to NULL
+      in order to prevent lexer from reading from source that doesn't exist
+      See source_create_struct() in this file
+    */
+    if (sources->current == NULL)
+    {
+        fprintf(stderr, "Attempted to pop source but stack is empty\n");
+        exit(EXIT_INTERNAL_ERROR);
+    }
+
     /*
       Soon current_source is going to point to the previous element
       as we are just about to free and replace it
       We have to save it to prevent memory leaks
     */
     tmp = sources->current;
+
 
     /*
       Since our list functions like a stack we can pop a element
