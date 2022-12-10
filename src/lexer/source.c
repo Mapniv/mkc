@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <common/check_io.h>
 #include <common/exitcodes.h>
 #include <common/guard.h>
 #include <common/messages.h>
@@ -242,12 +243,7 @@ void load(struct sources *sources)
     if (chars_read < SOURCE_BUFFER_SIZE)
     {
         /* Positive errno indicates error */
-        if (errno > 0)
-        {
-            fputs("I/O error", stderr);
-            printf("%d\n", errno);
-            exit(EXITCODE_INTERNAL_ERROR);
-        }
+        CHECK_IO_ERROR(errno > 0)
 
         current->buffer[chars_read] = '\0';
     }

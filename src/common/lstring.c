@@ -4,6 +4,7 @@
 
 #include <convert/to_string.h>
 
+#include "check_io.h"
 #include "guard.h"
 
 #include "lstring.h"
@@ -140,15 +141,11 @@ void lstring_append_size(struct lstring *lstring, size_t size)
 
 void lstring_print(struct lstring *lstring, FILE *fd)
 {
-    /*
-      Write contents of the log all at once, not byte by byte
-      It prevents following situation:
-        we write a byte
-        someone else writes a byte
-        we write a byte
-        and so on
-      It is common to run compiler four times at once (eg. make -j4)
-      Again, we do not want to end up with garbage on the screen
-    */
-    fwrite(lstring->text, lstring->length, 1, fd);
+    size_t elements_written;
+
+    /* Write contents of the log all at once, not byte by byte */
+
+    elements_written = fwrite(lstring->text, lstring->length, 1, fd);
+
+    CHECK_IO_ERROR(elements_written != 1)
 }
