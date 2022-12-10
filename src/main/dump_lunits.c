@@ -21,7 +21,7 @@ static FILE *get_output_stream(struct options *opts);
 
 static FILE *get_input_stream(struct options *opts);
 
-static void log_lunit(struct lstring *log, struct lunit *lunit);
+static void log_lunit(FILE *fd, struct lunit *lunit);
 
 static void log_token(struct lstring *log, struct lunit *lunit);
 
@@ -43,7 +43,6 @@ void dump_lunits(int argc, char **argv)
     FILE *out;
     FILE *in;
     struct sources *sources;
-    struct lstring *log;
 
     opts = register_options();
 
@@ -64,8 +63,6 @@ void dump_lunits(int argc, char **argv)
     sources = source_create_struct();
     source_push(sources, in);
 
-    log = lstring_create();
-
     while (true)
     {
         struct lunit *lunit;
@@ -76,7 +73,7 @@ void dump_lunits(int argc, char **argv)
         /* Get one lunit from lexer */
         lunit = lunit_get(sources);
 
-        log_lunit(log, lunit);
+        log_lunit(out, lunit);
 
         /* We have to destroy lunit before quitting so save this state */
         if (lunit->token == TOK_EOF)
@@ -86,9 +83,6 @@ void dump_lunits(int argc, char **argv)
 
         if (finish == true) break;
     }
-
-    lstring_print(log, out);
-    lstring_destroy(log);
 
     source_pop(sources);
     free(sources);
@@ -180,14 +174,21 @@ static FILE *get_input_stream(struct options *opts)
     return fd;
 }
 
-static void log_lunit(struct lstring *log, struct lunit *lunit)
+static void log_lunit(FILE *fd, struct lunit *lunit)
 {
+    struct lstring *log;
+
+    log = lstring_create();
+
     log_token(log, lunit);
     log_lexme(log, lunit);
     log_line(log, lunit);
     log_column(log, lunit);
     log_length(log, lunit);
     lstring_append_string(log, "\n");
+
+    lstring_print(log, fd);
+    lstring_destroy(log);
 }
 
 static void log_token(struct lstring *log, struct lunit *lunit)
