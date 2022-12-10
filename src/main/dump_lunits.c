@@ -11,15 +11,15 @@
 #include <lexer/lexer.h>
 #include <lexer/source.h>
 
-#include "options.h"
+#include "arguments.h"
 
 #include "dump_lunits.h"
 
-static struct options *register_options(void);
+static struct arguments *register_options(void);
 
-static FILE *get_output_stream(struct options *opts);
+static FILE *get_output_stream(struct arguments *args);
 
-static FILE *get_input_stream(struct options *opts);
+static FILE *get_input_stream(struct arguments *args);
 
 static void log_lunit(FILE *fd, struct lunit *lunit);
 
@@ -39,12 +39,12 @@ static char *token_to_str(enum token token);
 
 void dump_lunits(int argc, char **argv)
 {
-    struct options *opts;
+    struct arguments *args;
     FILE *out;
     FILE *in;
     struct sources *sources;
 
-    opts = register_options();
+    args = register_options();
 
     /*
       0 - program name
@@ -53,12 +53,12 @@ void dump_lunits(int argc, char **argv)
       3 - first option
       Skip program name, subcommand and mode
     */
-    opt_parse(opts, argc - 3, &argv[3]);
+    arg_parse(args, argc - 3, &argv[3]);
 
-    out = get_output_stream(opts);
-    in = get_input_stream(opts);
+    out = get_output_stream(args);
+    in = get_input_stream(args);
 
-    opt_destroy_struct(opts);
+    arg_destroy_struct(args);
 
     sources = source_create_struct();
     source_push(sources, in);
@@ -91,30 +91,30 @@ void dump_lunits(int argc, char **argv)
     fclose(out);
 }
 
-static struct options *register_options(void)
+static struct arguments *register_options(void)
 {
-    struct options *opts;
-    struct option_info *info;
+    struct arguments *args;
+    struct switch_info *info;
 
-    opts = opt_create_struct();
+    args = arg_create_struct();
 
-    info = opt_create_info(true);
-    opt_add_long(info, "output");
-    opt_add_long(info, "output-file");
-    opt_add_short(info, 'o');
-    opt_register(opts, info);
+    info = arg_create_switch_info(true);
+    arg_add_long(info, "output");
+    arg_add_long(info, "output-file");
+    arg_add_short(info, 'o');
+    arg_register(args, info);
 
-    return opts;
+    return args;
 }
 
 
-static FILE *get_output_stream(struct options *opts)
+static FILE *get_output_stream(struct arguments *args)
 {
     char *file_name;
-    struct option_info *info;
+    struct switch_info *info;
     FILE *fd;
 
-    info = opt_find_long(opts, "output");
+    info = arg_find_long(args, "output");
     assert(info != NULL);
 
     if (info->occurrences > 1)
@@ -143,24 +143,24 @@ static FILE *get_output_stream(struct options *opts)
     return fd;
 }
 
-static FILE *get_input_stream(struct options *opts)
+static FILE *get_input_stream(struct arguments *args)
 {
     char *file_name;
     FILE *fd;
 
-    if (opts->parameter_count == 0)
+    if (args->parameter_count == 0)
     {
         fputs("No input files", stderr);
         exit(EXITCODE_INVOCATION_ERROR);
     }
 
-    if (opts->parameter_count > 1)
+    if (args->parameter_count > 1)
     {
         fputs("Expected one input file, got more\n", stderr);
         exit(EXITCODE_INVOCATION_ERROR);
     }
 
-    file_name = opts->parameters[0];
+    file_name = args->parameters[0];
 
     fd = fopen(file_name, "r");
 
