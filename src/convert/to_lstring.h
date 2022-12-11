@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
-char *size_to_string(size_t size);
+#include <common/lstring.h>
+
+struct lstring *size_to_lstring(size_t size);
 
 #endif

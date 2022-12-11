@@ -240,7 +240,7 @@ void arg_add_short(struct switch_info *info, char c)
       We need one more
       Also if short_switches is NULL realloc works like malloc
     */
-    new_size = (info->short_count + 1) * sizeof(char);
+    new_size = info->short_count + 1;
     new_short_switches = realloc(info->short_switches, new_size);
 
     /*
@@ -270,7 +270,7 @@ void arg_add_long(struct switch_info *info, char *str)
       We need one more
       Also if long_switches is NULL realloc works like malloc
     */
-    new_size = (info->long_count + 1);
+    new_size = (info->long_count + 1) * sizeof(char *);
     new_long_switches = realloc(info->long_switches, new_size);
 
     /*
@@ -353,7 +353,7 @@ static void handle_parameter(struct arguments *args,
       but we want to allocate apace for one more
       Calling realloc(NULL, size) is equivalent to malloc(size)
     */
-    new_size = args->parameter_count + 1;
+    new_size = (args->parameter_count + 1) * sizeof(char *);
     new_parameters = realloc(args->parameters, new_size);
 
     GUARD(new_parameters)
@@ -601,7 +601,7 @@ static void append(struct switch_info *info, char *value)
       That is we have occurrences - 1 elements in the array
       If info->parameters is NULL realloc works like malloc
     */
-    new_size = info->occurrences;
+    new_size = info->occurrences * sizeof(char *);
     new_parameters = realloc(info->parameters, new_size);
 
     /*

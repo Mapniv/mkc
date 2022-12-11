@@ -1,8 +1,9 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <convert/to_string.h>
+#include <convert/to_lstring.h>
 
 #include "check_io.h"
 #include "guard.h"
@@ -122,7 +123,7 @@ void lstring_append_lstring(struct lstring *dest, struct lstring *src)
       point one byte after its end
       This is where we want to append this string
       & operator makes a pointer out of this position
-      We use strncpy because log->text isn't null terminated
+      We use strncpy because dest->text isn't null terminated
     */
     strncpy(&dest->text[dest->length], src->text, src->length);
     dest->length += src->length;
@@ -130,20 +131,20 @@ void lstring_append_lstring(struct lstring *dest, struct lstring *src)
 
 void lstring_append_size(struct lstring *lstring, size_t size)
 {
-    char *size_as_str;
+    struct lstring *size_as_lstr;
 
-    size_as_str = size_to_string(size);
+    size_as_lstr = size_to_lstring(size);
 
-    lstring_append_string(lstring, size_as_str);
+    lstring_append_lstring(lstring, size_as_lstr);
 
-    free(size_as_str);
+    lstring_destroy(size_as_lstr);
 }
 
 void lstring_reverse(struct lstring *lstring)
 {
     char *old_text;
     char *reversed_text;
-    size_t iter;
+    size_t from, to;
 
     old_text = lstring->text;
 
