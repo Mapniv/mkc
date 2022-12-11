@@ -139,6 +139,53 @@ void lstring_append_size(struct lstring *lstring, size_t size)
     free(size_as_str);
 }
 
+void lstring_reverse(struct lstring *lstring)
+{
+    char *old_text;
+    char *reversed_text;
+    size_t iter;
+
+    old_text = lstring->text;
+
+    reversed_text = malloc(lstring->length);
+
+    GUARD(reversed_text)
+
+    /*
+      Length of a given array used as its subscript points
+      one element after the last element of an array. Bad
+      We want to start at the last element
+    */
+    from = lstring->length - 1;
+
+    /* We want to start inserting chars at the very beginning */
+    to = 0;
+
+
+    while (true)
+    {
+        reversed_text[to] = old_text[from];
+
+        /*
+          This is the end condition, we just moved first char
+          Next one would be -1, there is no such thing
+        */
+        if (from == 0)
+            break;
+
+        /*
+          Move to next char in old_text
+          and to its destination in reversed_text
+        */
+        from -= 1;
+        to += 1;
+    }
+
+    free(old_text);
+
+    lstring->text = reversed_text;
+}
+
 void lstring_print(struct lstring *lstring, FILE *fd)
 {
     size_t elements_written;
