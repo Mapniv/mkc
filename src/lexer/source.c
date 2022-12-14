@@ -69,7 +69,7 @@ void source_push(struct sources *sources, FILE *fd)
     sources->current = new_source;
 
     /*
-      Now that source_info->current points to newly created source
+      Now that sources->current points to newly created source
       we can initialize buffer and buffer_index members of current source
     */
     load(sources);
