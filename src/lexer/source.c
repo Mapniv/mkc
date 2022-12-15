@@ -152,7 +152,7 @@ void source_next(struct sources *sources)
     bool previous_char_was_newline = false;
 
     /*
-      Current is easier to type than source_info->current
+      Current is easier to type than sources->current
       We want the ech line to be no longer than 80 chars, too
     */
     current = sources->current;
