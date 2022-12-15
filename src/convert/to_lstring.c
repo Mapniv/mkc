@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include <common/guard.h>
+#include <common/lstring.h>
 
 #include "to_lstring.h"
 
