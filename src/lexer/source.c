@@ -22,7 +22,6 @@
 
 struct source_info
 {
-    struct source_info *previous;
     FILE *fd;
     size_t line;
     size_t column;
@@ -32,7 +31,8 @@ struct source_info
 
 struct sources
 {
-    struct source_info *current;
+    struct source_info **array;
+    size_t count;
 };
 
 
@@ -47,26 +47,44 @@ struct sources *source_create_struct(void)
 
     GUARD(sources)
 
-    sources->current = NULL;
+    sources->array = NULL;
+    sources->count = 0;
 
     return sources;
 }
 
 void source_push(struct sources *sources, FILE *fd)
 {
+    size_t new_size;
     struct source_info *new_source;
+    struct source_info **new_array;
 
     /* Allocate and initialize new_source */
     new_source = source_create_info(fd);
 
     /*
-      Push new_source onto the source "stack"
-      From now on new_source becomes top of the stack
-      new_source has a pointer to previous element
-      so this operation can be reverted with a call to source_pop
+      We want to push new_source onto the source "stack"
+      To do this we need to allocate space first
+      When sources->array is NULL realloc works like malloc
     */
-    new_source->previous = sources->current;
-    sources->current = new_source;
+    new_size = (sources->count + 1) * sizeof(struct source_info *);
+    new_array = realloc(sources->array, new_size);
+
+    GUARD(new_array)
+
+    sources->array = new_array;
+
+
+    /*
+      Push new_source onto the stack
+      This operation can be reverted with source_pop()
+      Array size used as its subscript points one element after the last one
+    */
+    sources->array[sources->count] = new_source;
+
+    /* Increment number of elements on the stack */
+    sources->count += 1;
+
 
     /*
       Now that sources->current points to newly created source
@@ -77,7 +95,8 @@ void source_push(struct sources *sources, FILE *fd)
 
 void source_pop(struct sources *sources)
 {
-    struct source_info *tmp;
+    size_t new_size;
+    struct source_info **new_array;
 
 
     /*
@@ -88,29 +107,59 @@ void source_pop(struct sources *sources)
       in order to prevent lexer from reading from source that doesn't exist
       See source_create_struct() in this file
     */
-    if (sources->current == NULL)
+    if (sources->count == 0)
     {
         fprintf(stderr, "Attempted to pop source but stack is empty\n");
         exit(EXITCODE_INTERNAL_ERROR);
     }
 
     /*
-      Soon current_source is going to point to the previous element
-      as we are just about to free and replace it
-      We have to save it to prevent memory leaks
+      Array's size used as its subscript points one element past the last one
+      We want to free last element hence we substract one
     */
-    tmp = sources->current;
+    free(sources->array[sources->count - 1]);
 
+    /* There is one element less on the stack */
+    sources->count -= 1;
 
     /*
-      Since our list functions like a stack we can pop a element
-      This means that the top element gets removed
-      and previous element becomes last (or top) element
-    */
-    sources->current = sources->current->previous;
+      In realloc's man page I found this:
+      If size was equal to 0, either NULL or a pointer
+      suitable to be passed to free is returned
 
-    /* Duh */
-    free(tmp);
+      What happens when we pass this non-NULL pointer to realloc?
+      I don't know and this is why I wrote this if-else statement
+      I just want to be sure
+      -- Mapniv
+    */
+    if (sources->count == 0)
+    {
+        free(sources->array);
+        /*
+          Very important, we don't want to pass invalid pointer to realloc
+          We are unlikely tp push another element after popping the last one
+          I want to be sure nothing goes wrong though
+        */
+        sources->array = NULL;
+    }
+    else
+    {
+        /*
+          Resize the stack
+
+          Is it neccessary? We are decreasing size of the stack
+          We aren't requesting more memory, what can go wrong there?
+          I don't know and that's why I'm checking whether reallocation failed
+          -- Mapniv
+        */
+        new_size = sources->count * sizeof(struct source_info *);
+        new_array = realloc(sources->array, new_size);
+
+        GUARD(new_array)
+
+        sources->array = new_array;
+        /* We already decremented sources->count */
+    }
 }
 
 
@@ -141,7 +190,11 @@ char source_get(struct sources *sources)
 {
     struct source_info *current;
 
-    current = sources->current;
+    /*
+      Array's size used as its subscript points one element past the last one
+      and we want to access the last one, this is why we substract one
+    */
+    current = sources->array[sources->count - 1];
 
     return current->buffer[current->buffer_index];
 }
@@ -151,11 +204,11 @@ void source_next(struct sources *sources)
     struct source_info *current;
     bool previous_char_was_newline = false;
 
-    /*
-      Current is easier to type than sources->current
-      We want the ech line to be no longer than 80 chars, too
+    /* Get current (last) source
+      Array's size used as its subscript points one element past the last one
+      and we want to access the last one, this is why we substract one
     */
-    current = sources->current;
+    current = sources->array[sources->count - 1];
 
     /*
       Check if current char is a EOL, if so set a flag
@@ -214,12 +267,28 @@ void source_next(struct sources *sources)
 
 size_t source_line(struct sources *sources)
 {
-    return sources->current->line;
+    struct source_info *current;
+    /*
+      Get current source
+      Array's size used as its subscript points one element past the last one
+      and we want to access the last one, this is why we substract one
+    */
+    current = sources->array[sources->count - 1];
+
+    return current->line;
 }
 
 size_t source_column(struct sources *sources)
 {
-    return sources->current->column;
+    struct source_info *current;
+    /*
+      Get current source
+      Array's size used as its subscript points one element past the last one
+      and we want to access the last one, this is why we substract one
+    */
+    current = sources->array[sources->count - 1];
+
+    return current->column;
 }
 
 /* lead next characters to buffer */
@@ -227,9 +296,14 @@ void load(struct sources *sources)
 {
     struct source_info *current;
     uint16_t chars_read;
+ 
+    /*
+      Get current source
+      Array's size used as its subscript points one element past the last one
+      and we want to access the last one, this is why we substract one
+    */
+    current = sources->array[sources->count - 1];
 
-    /* It's shorter this way */
-    current = sources->current;
     chars_read = 0;
 
     /*
